@@ -199,34 +199,42 @@ const processPendingJobs = async (batchSize = 10) => {
         const sendResult = await dispatchJob(job);
 
         if (sendResult?.status === 'DELIVERED') {
-          await prisma.emailDeliveryLog.update({
-            where: { id: job.id },
-            data: {
-              status: 'SENT',
-              attemptCount: { increment: 1 },
-              providerResponse: `SMTP_ACCEPTED: ${sendResult.providerRef || 'OK'}`,
-              errorDetails: null,
-              sentAt: new Date(),
-              lockedAt: null,
-              lockedBy: null,
-            },
-          });
-          logger.info(`✅ [EmailQueue] Dispatched to ${job.recipientEmail} (Log: ${job.id})`);
+          try {
+            await prisma.emailDeliveryLog.update({
+              where: { id: job.id },
+              data: {
+                status: 'SENT',
+                attemptCount: { increment: 1 },
+                providerResponse: `SMTP_ACCEPTED: ${sendResult.providerRef || 'OK'}`,
+                errorDetails: null,
+                sentAt: new Date(),
+                lockedAt: null,
+                lockedBy: null,
+              },
+            });
+            logger.info(`✅ [EmailQueue] Dispatched to ${job.recipientEmail} (Log: ${job.id})`);
+          } catch (e) {
+            logger.warn(`Email log ${job.id} already removed or not found: ${e.message}`);
+          }
         } else if (sendResult?.status === 'SKIPPED') {
           // Mock mode
-          await prisma.emailDeliveryLog.update({
-            where: { id: job.id },
-            data: {
-              status: 'SENT',
-              attemptCount: { increment: 1 },
-              providerResponse: 'MOCK_DELIVERED (SMTP not configured)',
-              errorDetails: null,
-              sentAt: new Date(),
-              lockedAt: null,
-              lockedBy: null,
-            },
-          });
-          logger.info(`ℹ️ [EmailQueue Mock] Simulated send to ${job.recipientEmail}`);
+          try {
+            await prisma.emailDeliveryLog.update({
+              where: { id: job.id },
+              data: {
+                status: 'SENT',
+                attemptCount: { increment: 1 },
+                providerResponse: 'MOCK_DELIVERED (SMTP not configured)',
+                errorDetails: null,
+                sentAt: new Date(),
+                lockedAt: null,
+                lockedBy: null,
+              },
+            });
+            logger.info(`ℹ️ [EmailQueue Mock] Simulated send to ${job.recipientEmail}`);
+          } catch (e) {
+            logger.warn(`Email log ${job.id} already removed or not found: ${e.message}`);
+          }
         } else {
           throw new Error(sendResult?.errorReason || 'SMTP delivery rejected by host');
         }
@@ -239,20 +247,24 @@ const processPendingJobs = async (batchSize = 10) => {
           const backoffSec = Math.min(3600, Math.pow(2, nextAttempt) * 30);
           const nextRetryAt = new Date(Date.now() + backoffSec * 1000);
 
-          await prisma.emailDeliveryLog.update({
-            where: { id: job.id },
-            data: {
-              status: 'QUEUED',
-              attemptCount: nextAttempt,
-              nextRetryAt,
-              errorDetails: `Attempt ${nextAttempt} failed: ${sendErr.message}`,
-              lockedAt: null,
-              lockedBy: null,
-            },
-          });
-          logger.warn(
-            `⚠️ [EmailQueue] Delivery failure for ${job.recipientEmail} (Attempt ${nextAttempt}/${maxAttempts}). Next retry in ${backoffSec}s.`,
-          );
+          try {
+            await prisma.emailDeliveryLog.update({
+              where: { id: job.id },
+              data: {
+                status: 'QUEUED',
+                attemptCount: nextAttempt,
+                nextRetryAt,
+                errorDetails: `Attempt ${nextAttempt} failed: ${sendErr.message}`,
+                lockedAt: null,
+                lockedBy: null,
+              },
+            });
+            logger.warn(
+              `⚠️ [EmailQueue] Delivery failure for ${job.recipientEmail} (Attempt ${nextAttempt}/${maxAttempts}). Next retry in ${backoffSec}s.`,
+            );
+          } catch {
+            // ignore if deleted
+          }
         } else {
           // Reached maximum retries
           await prisma.emailDeliveryLog.update({
