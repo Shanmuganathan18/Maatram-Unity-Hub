@@ -20,6 +20,7 @@ import UsersPage from './Users';
 import EmailDeliveryCentre from '../components/admin/EmailDeliveryCentre';
 import ImportHistory from '../components/admin/ImportHistory';
 import { usePageTitle } from '../hooks/useStore';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export default function PeopleHub() {
   usePageTitle('People & Access');
@@ -55,12 +56,14 @@ export default function PeopleHub() {
       />
 
       {/* Tab Panels */}
-      {currentTab === 'students' && <Students />}
-      {currentTab === 'officers' && <Officers />}
-      {currentTab === 'admins' && <AdminManagement />}
-      {currentTab === 'users' && <UsersPage />}
-      {currentTab === 'activation' && <EmailDeliveryCentre />}
-      {currentTab === 'imports' && <ImportHistory />}
+      <ErrorBoundary key={currentTab}>
+        {currentTab === 'students' && <Students />}
+        {currentTab === 'officers' && <Officers />}
+        {currentTab === 'admins' && <AdminManagement />}
+        {currentTab === 'users' && <UsersPage />}
+        {currentTab === 'activation' && <EmailDeliveryCentre />}
+        {currentTab === 'imports' && <ImportHistory />}
+      </ErrorBoundary>
     </div>
   );
 }

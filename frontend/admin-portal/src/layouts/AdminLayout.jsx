@@ -14,6 +14,7 @@ import { navItems } from '../components/layout/navItems';
 import DevTools from '../components/layout/DevTools';
 import GlobalSearch from '../components/layout/GlobalSearch';
 import { Avatar, Modal } from '../components/ui';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../context/PermissionContext';
 import { useOnline, useStore } from '../hooks/useStore';
@@ -315,7 +316,9 @@ export default function AdminLayout() {
         )}
 
         <main id="main" className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-5 sm:px-6">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 

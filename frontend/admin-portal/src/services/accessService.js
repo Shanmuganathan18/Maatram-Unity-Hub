@@ -15,16 +15,17 @@ export const getAdmin = (aid) => {
     const raw = sessionStorage.getItem('maatram_admin_profile') || localStorage.getItem('maatram_admin_profile');
     if (raw) {
       const u = JSON.parse(raw);
-      if (u.profile && (u.id === aid || u.profile.id === aid || u.profile.adminId === aid)) {
+      const prof = u.profile || u;
+      if (u.id === aid || prof.id === aid || prof.adminId === aid || !aid) {
         return {
-          id: aid,
-          adminId: u.profile.adminId,
-          name: u.profile.name || u.email,
-          email: u.email,
+          id: aid || u.id || prof.id,
+          adminId: prof.adminId || prof.id || 'ADM-01',
+          name: prof.name || u.name || u.email,
+          email: u.email || prof.email,
           role: 'admin',
           status: 'Active',
-          roleLabel: u.profile.roleLabel || 'Admin',
-          permissions: u.profile.permissions || defaultRolePermissions.admin,
+          roleLabel: prof.roleLabel || 'Admin',
+          permissions: prof.permissions || defaultRolePermissions.admin,
         };
       }
     }

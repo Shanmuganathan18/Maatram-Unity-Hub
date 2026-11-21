@@ -31,7 +31,7 @@ export const syncBackendData = async () => {
       api.get('/institutions'),
       api.get('/students?perPage=100'),
       api.get('/officers'),
-      api.get('/admin/students/imports'),
+      api.get('/admin/imports'),
       api.get('/events'),
       api.get('/announcements'),
       api.get('/support'),
@@ -73,6 +73,7 @@ export const syncBackendData = async () => {
           zoneId: st.zoneId,
           status: st.status || 'Active',
           availabilityStatus: 'not_submitted',
+          createdAt: st.createdAt ? new Date(st.createdAt).getTime() : Date.now(),
         }));
         if (liveStudents.length > 0) {
           s.students = liveStudents;
@@ -89,6 +90,8 @@ export const syncBackendData = async () => {
           designation: o.designation || 'Zonal Officer',
           zoneId: o.zoneId,
           status: o.status || 'Active',
+          lastLogin: o.lastLoginAt ? new Date(o.lastLoginAt).getTime() : null,
+          createdAt: o.createdAt ? new Date(o.createdAt).getTime() : Date.now(),
         }));
         if (liveOfficers.length > 0) {
           s.officers = liveOfficers;

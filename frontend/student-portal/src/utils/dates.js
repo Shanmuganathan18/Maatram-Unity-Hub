@@ -47,8 +47,12 @@ export const fmtTime = (hhmm) => {
   return `${h % 12 || 12}:${pad(m)} ${h < 12 ? 'AM' : 'PM'}`;
 };
 export const fmtTimeRange = (s, e) => (s ? (e ? `${fmtTime(s)} – ${fmtTime(e)}` : fmtTime(s)) : 'Time to be confirmed');
-export const fmtInstant = (ms, opts = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) =>
-  fmt(opts, appConfig.timezone).format(new Date(ms)).replace(/\b(am|pm)\b/, (x) => x.toUpperCase());
+export const fmtInstant = (ms, opts = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) => {
+  if (!ms) return '—';
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return '—';
+  return fmt(opts, appConfig.timezone).format(d).replace(/\b(am|pm)\b/, (x) => x.toUpperCase());
+};
 export const fmtDeadline = (ms) => fmtInstant(ms, { weekday: 'long', hour: 'numeric', minute: '2-digit', hour12: true }).replace(',', '');
 
 export const relativeTime = (ms, nowMs) => {

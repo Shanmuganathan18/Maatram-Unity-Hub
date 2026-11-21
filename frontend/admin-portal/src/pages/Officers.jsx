@@ -80,7 +80,7 @@ export default function Officers() {
     {
       key: 'c',
       label: 'Created',
-      render: (o) => fmtInstant(o.createdAt, { day: 'numeric', month: 'short', year: 'numeric' }),
+      render: (o) => (o.createdAt ? fmtInstant(o.createdAt, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'),
     },
   ];
 

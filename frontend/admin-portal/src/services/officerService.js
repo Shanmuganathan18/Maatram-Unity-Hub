@@ -5,8 +5,8 @@ import { zoneMetrics, zoneName, filterEvents, eventStats } from './metrics';
 const view = (o) => ({ ...o, zoneLabel: o.zoneId ? zoneName(o.zoneId) : 'Unassigned' });
 export const listOfficers = (aid, { q = '', zoneId = '', status = '', designation = '', sort = 'name' } = {}) => {
   need(aid, 'officers.view'); const n = q.trim().toLowerCase();
-  const rows = getState().officers.filter((o) => (!n || `${o.name} ${o.email} ${o.officerId}`.toLowerCase().includes(n)) && (!zoneId || (zoneId === 'none' ? !o.zoneId : o.zoneId === zoneId)) && (!status || o.status === status) && (!designation || o.designation === designation)).map(view);
-  rows.sort((a, b) => (sort === 'created' ? b.createdAt - a.createdAt : a.name.localeCompare(b.name))); return rows;
+  const rows = getState().officers.filter((o) => (!n || `${o.name || ''} ${o.email || ''} ${o.officerId || ''}`.toLowerCase().includes(n)) && (!zoneId || (zoneId === 'none' ? !o.zoneId : o.zoneId === zoneId)) && (!status || o.status === status) && (!designation || o.designation === designation)).map(view);
+  rows.sort((a, b) => (sort === 'created' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.name || '').localeCompare(b.name || ''))); return rows;
 };
 export const getOfficerDetail = (aid, id) => {
   need(aid, 'officers.view'); const st = getState(); const o = st.officers.find((x) => x.id === id); if (!o) return null;
