@@ -245,18 +245,25 @@ const createOfficer = async (data, actor) => {
   }
 
   // Audit log
-  await prisma.auditLog.create({
-    data: {
-      actorId: actor.id,
-      actorName: actor.name || actor.email,
-      actorRole: actor.role.toLowerCase(),
-      action: 'officer.created',
-      category: 'Officer',
-      description: `Created officer account for ${officer.name} (${officer.officerId})`,
-      zoneId: officer.zoneId,
-      related: { type: 'officer', id: officer.id, label: officer.name },
-    },
-  });
+  try {
+    const actorUser = actor?.id ? await prisma.user.findUnique({ where: { id: actor.id } }) : null;
+    if (actorUser) {
+      await prisma.auditLog.create({
+        data: {
+          actorId: actorUser.id,
+          actorName: actor.name || actor.email || 'Admin',
+          actorRole: actor.role?.toLowerCase() || 'admin',
+          action: 'officer.created',
+          category: 'Officer',
+          description: `Created officer account for ${officer.name} (${officer.officerId})`,
+          zoneId: officer.zoneId,
+          related: { type: 'officer', id: officer.id, label: officer.name },
+        },
+      });
+    }
+  } catch (auditErr) {
+    logger.warn('Audit log write error:', auditErr.message);
+  }
 
   return officer;
 };
@@ -300,19 +307,145 @@ const toggleOfficerStatus = async (officerId, status, actor) => {
 };
 
 /**
+ * Update officer details and optionally dispatch activation / update email (Admin only).
+ */
+const updateOfficer = async (officerId, data, actor) => {
+  const email = data.email ? data.email.trim().toLowerCase() : null;
+
+  // Find officer by ID, officerId code, or current user email
+  let officer = await prisma.officerProfile.findFirst({
+    where: {
+      OR: [
+        { id: officerId },
+        { officerId },
+        ...(email ? [{ user: { email } }] : []),
+      ],
+    },
+    include: { user: true, zone: true },
+  });
+
+  // If officer record does not exist in MySQL yet (e.g. from seed or newly assigned), provision it
+  if (!officer) {
+    if (!data.name || !email) {
+      throw new NotFoundError('Officer not found and missing required name/email to provision');
+    }
+    return createOfficer(
+      {
+        ...data,
+        name: data.name,
+        email,
+        phone: data.phone,
+        designation: data.designation,
+        zoneId: data.zoneId,
+        temporaryPassword: data.temporaryPassword || 'Maatram@2026',
+        sendWelcomeEmail: data.sendEmailNotification !== false,
+      },
+      actor,
+    );
+  }
+
+  const updateProfileData = {};
+  if (data.name) updateProfileData.name = data.name.trim();
+  if (data.phone !== undefined) updateProfileData.phone = data.phone?.trim() || null;
+  if (data.designation) updateProfileData.designation = data.designation.trim();
+
+  let emailChanged = false;
+  if (email && email !== officer.user.email) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing && existing.id !== officer.userId) {
+      throw new ConflictError('A user with this email already exists');
+    }
+    emailChanged = true;
+  }
+
+  const temporaryPassword = data.temporaryPassword || 'Maatram@2026';
+
+  // Update Supabase and User table if email changed or password reset requested
+  if (emailChanged || data.resetPassword) {
+    if (officer.user.supabaseUid) {
+      const sbUpdates = {};
+      if (emailChanged) sbUpdates.email = email;
+      if (data.resetPassword || emailChanged) sbUpdates.password = temporaryPassword;
+      await supabaseAdmin.auth.admin.updateUserById(officer.user.supabaseUid, sbUpdates).catch((err) => {
+        logger.warn('Supabase update error on officer update:', err.message);
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: officer.userId },
+      data: {
+        email: emailChanged ? email : undefined,
+        mustChangePassword: true,
+      },
+    });
+  }
+
+  // Update OfficerProfile
+  const updated = await prisma.officerProfile.update({
+    where: { id: officer.id },
+    data: updateProfileData,
+    include: { user: true, zone: true },
+  });
+
+  // Dispatch activation / credentials update email
+  let emailDelivery = null;
+  if (data.sendEmailNotification !== false) {
+    const targetEmail = emailChanged ? email : updated.user.email;
+    emailDelivery = await emailDeliveryService.queueActivationEmail({
+      userId: updated.userId,
+      role: 'OFFICER',
+      email: targetEmail,
+      name: updated.name,
+      officerName: updated.name,
+      designation: updated.designation,
+      zoneName: updated.zone?.name || 'Assigned Zone',
+      temporaryPassword,
+      portalUrl: env.cors.allowedOrigins[1] ? `${env.cors.allowedOrigins[1]}/login` : 'http://localhost:5174/login',
+      asyncMode: false,
+    }).catch((err) => {
+      logger.warn('Failed to queue activation email for updated officer:', err.message);
+      return null;
+    });
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: actor.id || 'admin',
+      actorName: actor.name || actor.email || 'Admin',
+      actorRole: actor.role?.toLowerCase() || 'admin',
+      action: 'officer.updated',
+      category: 'Officer',
+      description: `Updated officer ${updated.name} (${updated.officerId})${emailChanged ? ` email changed to ${email}` : ''}`,
+      zoneId: updated.zoneId,
+      related: { type: 'officer', id: updated.id, label: updated.name },
+    },
+  }).catch(() => {});
+
+  return {
+    ...updated,
+    email: updated.user.email,
+    temporaryPassword,
+    emailDelivery,
+    emailSent: Boolean(emailDelivery),
+  };
+};
+
+/**
  * Resend officer invitation / welcome email.
  */
 const resendOfficerInvite = async (officerId, actor) => {
-  const officer = await prisma.officerProfile.findUnique({
-    where: { id: officerId },
+  const officer = await prisma.officerProfile.findFirst({
+    where: {
+      OR: [{ id: officerId }, { officerId }],
+    },
     include: { user: true, zone: true },
   });
   if (!officer) throw new NotFoundError('Officer not found');
 
-  const temporaryPassword = 'Maatram@' + Math.floor(1000 + Math.random() * 9000);
+  const temporaryPassword = 'Maatram@2026';
   const result = await emailDeliveryService.resendActivationByUserId(officer.userId, temporaryPassword, actor);
 
-  return { success: true, email: officer.user.email, delivery: result };
+  return { success: true, email: officer.user.email, temporaryPassword, delivery: result };
 };
 
 /**
@@ -350,6 +483,7 @@ module.exports = {
   getOfficerDashboard,
   listOfficers,
   createOfficer,
+  updateOfficer,
   toggleOfficerStatus,
   resendOfficerInvite,
   reassignOfficerZone,

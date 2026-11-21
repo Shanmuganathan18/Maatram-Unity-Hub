@@ -8,7 +8,28 @@ import { usePageTitle } from '../hooks/useStore';
 import { createOfficer } from '../services/officerService';
 
 export default function CreateOfficer() {
-  usePageTitle('Create officer'); const { aid } = useAuth(); const nav = useNavigate();
-  return (<><Back to="/officers">Officers</Back><PageHeader title="Create officer" subtitle="Creates a pending account and simulates an invitation." />
-    <Card className="max-w-3xl"><OfficerForm submitLabel="Create officer" onCancel={() => nav('/officers')} onSubmit={async (v) => { const o = await createOfficer(aid, v); toast.success(`Officer ${o.name} created as Pending Activation (invitation simulated – no email sent).`); nav(`/officers/${o.id}`); }} /></Card></>);
+  usePageTitle('Create officer');
+  const { aid } = useAuth();
+  const nav = useNavigate();
+
+  return (
+    <>
+      <Back to="/officers">Officers</Back>
+      <PageHeader
+        title="Create officer"
+        subtitle="Provision a regional zone officer account and automatically dispatch an activation email with login credentials."
+      />
+      <Card className="max-w-3xl">
+        <OfficerForm
+          submitLabel="Create officer & Dispatch Activation"
+          onCancel={() => nav('/officers')}
+          onSubmit={async (v) => {
+            const o = await createOfficer(aid, v);
+            toast.success(`Officer ${o.name} created! Activation email dispatched to ${v.email} (Password: Maatram@2026).`);
+            nav(`/officers/${o.id}`);
+          }}
+        />
+      </Card>
+    </>
+  );
 }

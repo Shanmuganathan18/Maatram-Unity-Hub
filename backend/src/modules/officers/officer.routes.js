@@ -48,6 +48,22 @@ router.post(
 );
 
 router.patch(
+  '/:id',
+  authenticate,
+  requireActiveAccount,
+  requirePermission('officers.edit'),
+  officerController.updateOfficer,
+);
+
+router.put(
+  '/:id',
+  authenticate,
+  requireActiveAccount,
+  requirePermission('officers.edit'),
+  officerController.updateOfficer,
+);
+
+router.patch(
   '/:id/zone',
   authenticate,
   requireActiveAccount,

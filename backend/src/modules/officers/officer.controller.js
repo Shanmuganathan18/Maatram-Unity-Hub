@@ -37,6 +37,21 @@ const createOfficer = async (req, res, next) => {
   }
 };
 
+const updateOfficer = async (req, res, next) => {
+  try {
+    const actor = {
+      id: req.user.id,
+      name: req.user.adminProfile?.name,
+      email: req.user.email,
+      role: req.user.role,
+    };
+    const updated = await officerService.updateOfficer(req.params.id, req.body, actor);
+    return success(res, updated, 'Officer updated successfully and activation email queued');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const reassignZone = async (req, res, next) => {
   try {
     const actor = {
@@ -94,6 +109,7 @@ module.exports = {
   getDashboard,
   listOfficers,
   createOfficer,
+  updateOfficer,
   toggleStatus,
   resendInvite,
   reassignZone,
