@@ -70,13 +70,19 @@ export default function ChangePassword() {
 
       toast.success('Password updated successfully! Welcome to your student portal.');
 
-      // Update cached profile
-      if (student) {
-        const updated = { ...student, mustChangePassword: false };
-        signIn(student.id || student.studentId, updated);
-      }
+      // Update cached profile in storage
+      const currentTargetId = student?.id || student?.studentId || 'student-user';
+      const updated = {
+        ...(student || {}),
+        id: currentTargetId,
+        mustChangePassword: false,
+      };
+      signIn(currentTargetId, updated);
 
-      navigate('/dashboard', { replace: true });
+      // Clean redirect to dashboard
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 300);
     } catch (apiErr) {
       if (apiErr.status === 401 || apiErr.message?.toLowerCase().includes('token')) {
         setErr('Your session has expired. Please log in with your temporary password on the login page.');

@@ -75,11 +75,10 @@ export default function Login() {
 
         toast.success(`Welcome back, ${user.profile?.name || user.email}!`);
 
-        if (user.mustChangePassword) {
-          nav('/change-password', { replace: true });
-        } else {
-          nav(loc.state?.from ?? '/dashboard', { replace: true });
-        }
+        const destination = user.mustChangePassword ? '/change-password' : (loc.state?.from ?? '/dashboard');
+        setTimeout(() => {
+          window.location.href = destination;
+        }, 200);
         return;
       }
     } catch (err) {

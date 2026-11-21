@@ -1,39 +1,48 @@
 import { getState, mutate, delay } from './store';
 
 export const getProfile = (sid) => {
+  if (!sid) return null;
+
   const s = getState();
-  const st = s.students.find((x) => x.id === sid);
+  const st = s?.students?.find((x) => x.id === sid || x.studentId === sid);
   if (st) {
-    return { ...st, institution: s.institutions.find((i) => i.id === st.institutionId)?.name ?? '—', zone: s.zones.find((z) => z.id === st.zoneId)?.label ?? '—' };
+    return {
+      ...st,
+      institution: s.institutions?.find((i) => i.id === st.institutionId)?.name ?? '—',
+      zone: s.zones?.find((z) => z.id === st.zoneId)?.label ?? '—',
+    };
   }
+
   try {
     const raw = sessionStorage.getItem('maatram_student_profile') || localStorage.getItem('maatram_student_profile');
     if (raw) {
       const u = JSON.parse(raw);
-      if (u.profile && (u.id === sid || u.profile.id === sid || u.profile.studentId === sid)) {
+      if (u) {
+        const p = u.profile || u;
         return {
-          id: sid,
-          studentId: u.profile.studentId,
-          name: u.profile.name,
-          email: u.email,
-          phone: u.profile.phone || '',
-          photoUrl: u.profile.photoUrl || '',
-          year: u.profile.year || 1,
-          department: u.profile.department || '',
-          institutionId: u.profile.institution?.id || '',
-          institution: u.profile.institution?.name ?? '—',
-          zoneId: u.profile.zone?.id || '',
-          zone: u.profile.zone?.name ?? '—',
-          status: 'Active',
-          groups: u.profile.groups || [],
-          whatsappEnabled: u.profile.whatsappEnabled ?? false,
-          mustChangePassword: Boolean(u.mustChangePassword),
+          id: p.id || u.id || sid,
+          studentId: p.studentId || u.studentId || 'MF-STU',
+          name: p.name || u.name || u.email || 'Student',
+          email: u.email || p.email || '',
+          phone: p.phone || '',
+          photoUrl: p.photoUrl || '',
+          year: p.year || 1,
+          department: typeof p.department === 'string' ? p.department : (p.department?.name || ''),
+          institutionId: p.institution?.id || p.institutionId || '',
+          institution: p.institution?.name || p.institution || '—',
+          zoneId: p.zone?.id || p.zoneId || '',
+          zone: p.zone?.name || p.zone || '—',
+          status: u.status || p.status || 'Active',
+          groups: p.groups || u.groups || [],
+          whatsappEnabled: Boolean(p.whatsappEnabled || u.whatsappEnabled),
+          mustChangePassword: Boolean(u.mustChangePassword ?? p.mustChangePassword),
         };
       }
     }
   } catch {
     // ignore
   }
+
   return null;
 };
 export const listDemoAccounts = () => getState().students.map((s) => ({ id: s.id, name: s.name, studentId: s.studentId, email: s.email }));

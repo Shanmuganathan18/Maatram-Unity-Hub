@@ -44,6 +44,6 @@ export function AuthProvider({ children }) {
   }, []);
   useStore();
   const student = sid ? getProfile(sid) : null;
-  return <Ctx.Provider value={{ sid: student ? sid : null, student, signIn, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ sid: sid || (student ? student.id : null), student, signIn, signOut }}>{children}</Ctx.Provider>;
 }
 export const useAuth = () => useContext(Ctx);

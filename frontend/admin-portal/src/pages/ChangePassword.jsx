@@ -53,14 +53,14 @@ export default function ChangePassword() {
         newPassword,
       });
 
-      // Update local admin session object
-      if (admin) {
-        const updated = { ...admin, mustChangePassword: false };
-        signIn(admin.id, updated);
-      }
+      const currentTargetId = admin?.id || 'admin-user';
+      const updated = { ...(admin || {}), id: currentTargetId, mustChangePassword: false };
+      signIn(currentTargetId, updated);
 
       toast.success('Your administrator password has been updated successfully!');
-      navigate('/dashboard', { replace: true });
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 300);
     } catch (apiErr) {
       setErr(apiErr.message || 'Failed to update password. Please verify your current temporary password.');
     } finally {

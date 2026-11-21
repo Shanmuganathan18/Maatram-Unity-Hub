@@ -58,12 +58,13 @@ export default function ChangePassword() {
 
       toast.success('Password updated successfully! Welcome to the Officer Portal.');
 
-      if (officer) {
-        const updated = { ...officer, mustChangePassword: false };
-        signIn(officer.id || officer.officerId, updated);
-      }
+      const currentTargetId = officer?.id || officer?.officerId || 'officer-user';
+      const updated = { ...(officer || {}), id: currentTargetId, mustChangePassword: false };
+      signIn(currentTargetId, updated);
 
-      navigate('/dashboard', { replace: true });
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 300);
     } catch (apiErr) {
       setErr(apiErr.message || 'Failed to update password.');
     } finally {
