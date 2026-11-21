@@ -9,20 +9,32 @@ const Ctx = createContext(null);
 const KEY = 'maatram-demo-student'; // stores student id / session id for the browser session
 
 export function AuthProvider({ children }) {
-  const [sid, setSid] = useState(() => { try { return sessionStorage.getItem(KEY); } catch { return null; } });
+  const [sid, setSid] = useState(() => {
+    try {
+      return sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+    } catch {
+      return null;
+    }
+  });
+
   const signIn = useCallback((id, profile = null) => {
     try {
       sessionStorage.setItem(KEY, id);
+      localStorage.setItem(KEY, id);
       if (profile) {
         sessionStorage.setItem('maatram_student_profile', JSON.stringify(profile));
+        localStorage.setItem('maatram_student_profile', JSON.stringify(profile));
       }
     } catch { /* ignore */ }
     setSid(id);
   }, []);
+
   const signOut = useCallback(() => {
     try {
       sessionStorage.removeItem(KEY);
+      localStorage.removeItem(KEY);
       sessionStorage.removeItem('maatram_student_profile');
+      localStorage.removeItem('maatram_student_profile');
       sessionStorage.removeItem('maatram_student_pending_token');
       sessionStorage.removeItem('maatram_student_pending_user');
       api.setToken(null);

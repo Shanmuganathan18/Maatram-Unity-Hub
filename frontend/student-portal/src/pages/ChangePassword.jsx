@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ShieldAlert, Lock, CheckCircle2, XCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ShieldAlert, Lock, CheckCircle2, XCircle, ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react';
 import { Button, Notice } from '../components/ui';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -18,6 +18,15 @@ export default function ChangePassword() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
+  const hasToken = Boolean(api.getToken());
+
+  useEffect(() => {
+    if (!api.getToken()) {
+      toast.error('Session not found. Please sign in with your email and temporary password first.');
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
   // Password policy checks
   const hasMinLength = newPassword.length >= 8;
   const hasUppercase = /[A-Z]/.test(newPassword);
@@ -30,6 +39,12 @@ export default function ChangePassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErr('');
+
+    if (!api.getToken()) {
+      setErr('Authentication token missing. Please sign in first with your email and temporary password.');
+      navigate('/login', { replace: true });
+      return;
+    }
 
     if (!currentPassword) {
       setErr('Please enter your current temporary password.');
@@ -63,7 +78,11 @@ export default function ChangePassword() {
 
       navigate('/dashboard', { replace: true });
     } catch (apiErr) {
-      setErr(apiErr.message || 'Failed to update password. Please check your current password.');
+      if (apiErr.status === 401 || apiErr.message?.toLowerCase().includes('token')) {
+        setErr('Your session has expired. Please log in with your temporary password on the login page.');
+      } else {
+        setErr(apiErr.message || 'Failed to update password. Please check your current password.');
+      }
     } finally {
       setBusy(false);
     }
@@ -90,6 +109,24 @@ export default function ChangePassword() {
           </Notice>
         )}
 
+        {!hasToken ? (
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm">
+              <p className="font-bold mb-1">Sign-in Required Before Password Setup</p>
+              <p className="text-amber-800">
+                To set your new password, you must first sign in with your registered student email and the temporary password (<code className="font-mono bg-white px-1 py-0.5 rounded border border-amber-300">Maatram@2026</code>) on the login page.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="w-full py-3 px-4 rounded-xl font-bold text-white bg-[#046c4e] hover:bg-[#03543d] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign in on Student Login Page &rarr;</span>
+            </button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="label" htmlFor="curr">Current / Temporary Password</label>
@@ -189,6 +226,7 @@ export default function ChangePassword() {
             Update Password & Enter Dashboard <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </form>
+        )}
       </div>
     </div>
   );

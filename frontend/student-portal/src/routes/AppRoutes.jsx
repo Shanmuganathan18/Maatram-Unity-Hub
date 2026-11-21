@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../services/api';
 import StudentLayout from '../layouts/StudentLayout';
 import Login from '../pages/Login';
 import AuthCallback from '../pages/AuthCallback';
@@ -22,8 +23,9 @@ import NotFound from '../pages/NotFound';
 function Protected({ children }) {
   const { sid, student } = useAuth();
   const loc = useLocation();
+  const hasToken = Boolean(api.getToken());
 
-  if (!sid) {
+  if (!sid || !hasToken) {
     return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search }} />;
   }
 
@@ -37,15 +39,17 @@ function Protected({ children }) {
 
 export default function AppRoutes() {
   const { sid, student } = useAuth();
+  const hasToken = Boolean(api.getToken());
   const isMustChange = Boolean(student?.mustChangePassword);
+  const isAuthenticated = Boolean(sid && hasToken);
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={sid ? (isMustChange ? '/change-password' : '/dashboard') : '/login'} replace />} />
-      <Route path="/login" element={sid ? <Navigate to={isMustChange ? '/change-password' : '/dashboard'} replace /> : <Login />} />
+      <Route path="/" element={<Navigate to={isAuthenticated ? (isMustChange ? '/change-password' : '/dashboard') : '/login'} replace />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to={isMustChange ? '/change-password' : '/dashboard'} replace /> : <Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/change-password" element={sid ? <ChangePassword /> : <Navigate to="/login" replace />} />
+      <Route path="/change-password" element={isAuthenticated ? <ChangePassword /> : <Navigate to="/login" replace />} />
       <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route element={<Protected><StudentLayout /></Protected>}>
         <Route path="/dashboard" element={<Dashboard />} />

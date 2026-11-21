@@ -21,8 +21,10 @@ class ApiClient {
     try {
       if (token) {
         sessionStorage.setItem('maatram_officer_token', token);
+        localStorage.setItem('maatram_officer_token', token);
       } else {
         sessionStorage.removeItem('maatram_officer_token');
+        localStorage.removeItem('maatram_officer_token');
       }
     } catch {
       // ignore

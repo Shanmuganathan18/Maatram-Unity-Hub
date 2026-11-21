@@ -43,6 +43,12 @@ export default function ChangePassword() {
       return;
     }
 
+    if (!api.getToken()) {
+      setErr('Your session has expired. Please sign in with your official email and temporary password on the login page.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
     try {
       setBusy(true);
       await api.post('/auth/change-password', {
