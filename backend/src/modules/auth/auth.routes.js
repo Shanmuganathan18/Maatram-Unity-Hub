@@ -5,7 +5,7 @@
 const { Router } = require('express');
 const { body } = require('express-validator');
 const { authLimiter } = require('../../middleware/rateLimiter');
-const { authenticate } = require('../../middleware/authenticate');
+const { authenticate, authenticateOptional } = require('../../middleware/authenticate');
 const { requireActiveAccount } = require('../../middleware/authorize');
 const validateRequest = require('../../middleware/validateRequest');
 const authController = require('./auth.controller');
@@ -74,12 +74,13 @@ router.post(
   authController.resetPassword,
 );
 
-// POST /api/v1/auth/change-password — authenticated password update
+// POST /api/v1/auth/change-password — authenticated or email-verified password update
 router.post(
   '/change-password',
-  authenticate,
+  authenticateOptional,
   authLimiter,
   [
+    body('email').optional().isEmail().normalizeEmail().withMessage('Valid email required'),
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword')
       .isLength({ min: 8 })

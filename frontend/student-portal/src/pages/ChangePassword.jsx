@@ -63,10 +63,15 @@ export default function ChangePassword() {
 
     try {
       setBusy(true);
-      await api.post('/auth/change-password', {
+      const res = await api.post('/auth/change-password', {
+        email: student?.email || '',
         currentPassword,
         newPassword,
       });
+
+      if (res?.data?.accessToken) {
+        api.setToken(res.data.accessToken);
+      }
 
       toast.success('Password updated successfully! Welcome to your student portal.');
 

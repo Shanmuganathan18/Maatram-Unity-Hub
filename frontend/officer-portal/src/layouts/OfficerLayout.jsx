@@ -47,14 +47,14 @@ export default function OfficerLayout() {
         <header className="no-print sticky top-0 z-20 flex items-center gap-3 bg-white px-4 py-3 shadow-sm">
           <button className="rounded-lg p-2 hover:bg-lavender-100 md:hidden" onClick={() => setDrawer(true)} aria-label="Open menu"><Menu className="h-5 w-5" /></button>
           <div className="min-w-0"><p className="truncate text-sm font-extrabold text-navy sm:text-base">{titles[seg[0]] ?? 'Officer Portal'}</p>
-            <p className="hidden truncate text-xs text-ink-mute sm:block">{seg.length > 1 ? `${titles[seg[0]] ?? seg[0]} / ${seg.slice(1).join(' / ')}` : `${officer.zoneLabel}`}</p></div>
+            <p className="hidden truncate text-xs text-ink-mute sm:block">{seg.length > 1 ? `${titles[seg[0]] ?? seg[0]} / ${seg.slice(1).join(' / ')}` : `${officer?.zoneLabel || 'Operational Workspace'}`}</p></div>
           <form onSubmit={search} role="search" className="ml-auto hidden max-w-xs flex-1 lg:block"><label htmlFor="gs" className="sr-only">Search students</label><div className="relative"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-mute" /><input id="gs" className="field min-h-[40px] pl-9" placeholder="Search students by name or ID" value={q} onChange={(e) => setQ(e.target.value)} /></div></form>
-          <span className="ml-auto rounded-pill bg-brand-50 px-3 py-1 text-xs font-bold text-brand-800 lg:ml-0" title="Assigned zone (read-only)">{officer.zoneLabel}</span>
+          <span className="ml-auto rounded-pill bg-brand-50 px-3 py-1 text-xs font-bold text-brand-800 lg:ml-0" title="Assigned zone (read-only)">{officer?.zoneLabel || 'Assigned Zone'}</span>
           <Link to="/notifications" className="relative rounded-full p-2 hover:bg-lavender-100" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}><Bell className="h-5 w-5" />{unread > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{unread}</span>}</Link>
           <div className="relative" ref={ref}>
-            <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-lavender-100" aria-haspopup="menu" aria-expanded={menu} aria-label="Profile menu"><Avatar student={officer} size="h-9 w-9 text-xs" /><ChevronDown className="hidden h-4 w-4 sm:block" /></button>
+            <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-lavender-100" aria-haspopup="menu" aria-expanded={menu} aria-label="Profile menu"><Avatar student={officer || { name: 'Officer' }} size="h-9 w-9 text-xs" /><ChevronDown className="hidden h-4 w-4 sm:block" /></button>
             {menu && <div role="menu" className="absolute right-0 mt-2 w-60 rounded-2xl border border-lavender-200 bg-white p-2 shadow-pop">
-              <div className="border-b border-lavender-200 px-3 py-2"><p className="font-bold text-navy">{officer.name}</p><p className="text-xs text-ink-mute">{officer.designation} · {officer.zoneLabel}</p></div>
+              <div className="border-b border-lavender-200 px-3 py-2"><p className="font-bold text-navy">{officer?.name || 'Zone Officer'}</p><p className="text-xs text-ink-mute">{officer?.designation || 'Zonal Officer'} · {officer?.zoneLabel || 'Assigned Zone'}</p></div>
               <Link role="menuitem" to="/profile" className="mt-1 block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-lavender-100">My profile</Link>
               <button role="menuitem" onClick={logout} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-700 hover:bg-rose-50">Logout</button></div>}
           </div>
@@ -63,7 +63,7 @@ export default function OfficerLayout() {
         <main id="main" className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-5 sm:px-6"><Outlet /></main>
       </div>
 
-      <Modal sheet open={drawer} onOpenChange={setDrawer} title="Menu" description={`${officer.name} · ${officer.zoneLabel}`}>
+      <Modal sheet open={drawer} onOpenChange={setDrawer} title="Menu" description={`${officer?.name || 'Zone Officer'} · ${officer?.zoneLabel || 'Assigned Zone'}`}>
         <nav className="grid grid-cols-2 gap-2">{navItems.map(({ to, label, icon: I }) => <Link key={to} to={to} className="flex min-h-[48px] items-center gap-2 rounded-xl border border-lavender-200 p-3 text-sm font-semibold text-navy"><I className="h-5 w-5 text-brand-700" />{label}</Link>)}
           <button onClick={logout} className="flex min-h-[48px] items-center gap-2 rounded-xl border border-rose-200 p-3 text-sm font-semibold text-rose-800"><LogOut className="h-5 w-5" />Logout</button></nav>
       </Modal>

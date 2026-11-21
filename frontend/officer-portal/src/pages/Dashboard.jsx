@@ -19,7 +19,14 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div><h1 className="text-2xl font-extrabold sm:text-3xl">Welcome, {officer.name.split(' ')[0]}</h1><p className="text-sm text-ink-soft">{officer.zoneLabel} · Week {isoWeekNumber(ws)} ({fmtRange(ws)}). Showing only your zone’s data.</p></div>
+        <div>
+          <h1 className="text-2xl font-extrabold sm:text-3xl">
+            Welcome, {officer?.name ? officer.name.split(' ')[0] : 'Officer'}
+          </h1>
+          <p className="text-sm text-ink-soft">
+            {officer?.zoneLabel || 'Assigned Zone'} · Week {isoWeekNumber(ws)} ({fmtRange(ws)}). Showing only your zone’s data.
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <LinkButton to="/events/create"><CalendarPlus className="h-4 w-4" />Create Event</LinkButton>
           <LinkButton to="/students" variant="outline"><Users className="h-4 w-4" />View Students</LinkButton>
@@ -71,18 +78,51 @@ export default function Dashboard() {
         </Card>
         <Card>
           <CardHeader icon={Ticket} title="Upcoming events" action={<TextLink to="/events">All events</TextLink>} />
-          {d.upcoming.length === 0 ? <EmptyState icon={Ticket} title="No upcoming events" action={<LinkButton to="/events/create" variant="secondary">Create event</LinkButton>} /> : (
-            <ul className="divide-y divide-lavender-200">{d.upcoming.map((e) => <li key={e.id} className="flex flex-wrap items-center gap-2 py-3">
-              <div className="min-w-0 flex-1"><Link to={`/events/${e.id}`} className="block truncate font-bold text-navy hover:underline">{e.title}</Link><p className="text-xs text-ink-soft">{eventCategories[e.category]} · {fmtDate(e.date)} · {fmtTimeRange(e.startTime, e.endTime)}</p><p className="truncate text-xs text-ink-mute">{e.institutionNames.join(', ')}</p></div>
-              <div className="flex flex-col items-end gap-1"><StatusBadge kind={e.status} /><span className="text-xs text-ink-soft">{e.stats.accepted} accepted · {e.stats.pending} pending</span></div>
-              <LinkButton to={`/events/${e.id}`} size="sm" variant="outline">View details</LinkButton></li>)}</ul>)}
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader icon={ScrollText} title="Recent activities" action={<TextLink to="/activity">Full log</TextLink>} />
-        <ul className="divide-y divide-lavender-200">{d.activity.map((a) => <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"><span><b className="text-navy">{a.description}</b>{a.related && <> – <Link className="text-brand-700 underline" to={a.related.type === 'event' ? `/events/${a.related.id}` : '/activity'}>{a.related.label}</Link></>}</span><span className="text-xs text-ink-mute">{a.actorName} · {fmtInstant(a.at)}</span></li>)}</ul>
+          {(!d.upcoming || d.upcoming.length === 0) ? (
+          <EmptyState icon={Ticket} title="No upcoming events" action={<LinkButton to="/events/create" variant="secondary">Create event</LinkButton>} />
+        ) : (
+          <ul className="divide-y divide-lavender-200">
+            {d.upcoming.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center gap-2 py-3">
+                <div className="min-w-0 flex-1">
+                  <Link to={`/events/${e.id}`} className="block truncate font-bold text-navy hover:underline">
+                    {e.title}
+                  </Link>
+                  <p className="text-xs text-ink-soft">
+                    {eventCategories[e.category] || e.category || 'General'} · {fmtDate(e.date)} · {fmtTimeRange(e.startTime, e.endTime)}
+                  </p>
+                  <p className="truncate text-xs text-ink-mute">
+                    {e.institutionNames?.length ? e.institutionNames.join(', ') : 'All Institutions'}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <StatusBadge kind={e.status} />
+                  <span className="text-xs text-ink-soft">
+                    {e.stats?.accepted ?? 0} accepted · {e.stats?.pending ?? 0} pending
+                  </span>
+                </div>
+                <LinkButton to={`/events/${e.id}`} size="sm" variant="outline">View details</LinkButton>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
+    </div>
+
+    <Card>
+      <CardHeader icon={ScrollText} title="Recent activities" action={<TextLink to="/activity">Full log</TextLink>} />
+      <ul className="divide-y divide-lavender-200">
+        {(d.activity || []).map((a) => (
+          <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+            <span>
+              <b className="text-navy">{a.description}</b>
+              {a.related && <> – <Link className="text-brand-700 underline" to={a.related.type === 'event' ? `/events/${a.related.id}` : '/activity'}>{a.related.label}</Link></>}
+            </span>
+            <span className="text-xs text-ink-mute">{a.actorName} · {fmtInstant(a.at)}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
     </div>
   );
 }

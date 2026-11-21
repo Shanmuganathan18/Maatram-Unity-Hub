@@ -308,17 +308,30 @@ const validatePasswordPolicy = (pwd) => {
 /**
  * Change password for authenticated user (verifies current password).
  */
-const changePassword = async ({ userId, currentPassword, newPassword }) => {
+const changePassword = async ({ userId, email, currentPassword, newPassword }) => {
   validatePasswordPolicy(newPassword);
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      studentProfile: { select: { name: true } },
-      officerProfile: { select: { name: true } },
-      adminProfile: { select: { name: true } },
-    },
-  });
+  let user = null;
+  if (userId) {
+    user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        studentProfile: { select: { name: true } },
+        officerProfile: { select: { name: true } },
+        adminProfile: { select: { name: true } },
+      },
+    });
+  } else if (email) {
+    user = await prisma.user.findUnique({
+      where: { email: (email || '').toLowerCase().trim() },
+      include: {
+        studentProfile: { select: { name: true } },
+        officerProfile: { select: { name: true } },
+        adminProfile: { select: { name: true } },
+      },
+    });
+  }
+
   if (!user) throw new NotFoundError('User account not found');
 
   // Verify current password via Supabase Auth
@@ -340,9 +353,21 @@ const changePassword = async ({ userId, currentPassword, newPassword }) => {
 
   // Clear mustChangePassword state in MySQL
   await prisma.user.update({
-    where: { id: userId },
+    where: { id: user.id },
     data: { mustChangePassword: false },
   });
+
+  // Re-authenticate to provide fresh access token if needed
+  let accessToken = null;
+  try {
+    const { data: newSession } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: newPassword,
+    });
+    accessToken = newSession?.session?.access_token || null;
+  } catch {
+    // ignore
+  }
 
   const name = user.studentProfile?.name || user.officerProfile?.name || user.adminProfile?.name || user.email;
   emailService.sendPasswordChangedEmail({ to: user.email, name }).catch((e) => {

@@ -76,9 +76,17 @@ const forgotPassword = async (req, res, next) => {
 
 const changePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { email, currentPassword, newPassword } = req.body;
+    const userId = req.user?.id || null;
+    const userEmail = (req.user?.email || email || '').trim().toLowerCase();
+
+    if (!userId && !userEmail) {
+      throw new ValidationError('Registered email or active session required');
+    }
+
     const result = await authService.changePassword({
-      userId: req.user.id,
+      userId,
+      email: userEmail,
       currentPassword,
       newPassword,
     });

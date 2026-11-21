@@ -51,10 +51,15 @@ export default function ChangePassword() {
 
     try {
       setBusy(true);
-      await api.post('/auth/change-password', {
+      const res = await api.post('/auth/change-password', {
+        email: officer?.email || '',
         currentPassword,
         newPassword,
       });
+
+      if (res?.data?.accessToken) {
+        api.setToken(res.data.accessToken);
+      }
 
       toast.success('Password updated successfully! Welcome to the Officer Portal.');
 

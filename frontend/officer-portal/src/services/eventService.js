@@ -7,6 +7,7 @@ import { dayStateFor, weekInfo } from './availabilityService';
 import { api } from './api';
 
 export const eventStats = (oid, e) => {
+  if (e.stats && typeof e.stats.accepted === 'number') return e.stats;
   const inv = zoneInvitations(oid).filter((i) => i.eventId === e.id);
   const n = (r) => inv.filter((i) => i.response === r).length;
   const accepted = n('accepted');
@@ -14,10 +15,10 @@ export const eventStats = (oid, e) => {
 };
 export const listEvents = (oid, { q = '', category = '', status = '', institutionId = '', from = '', to = '' } = {}) => {
   const needle = q.trim().toLowerCase();
-  return zoneEvents(oid).filter((e) => (!needle || e.title.toLowerCase().includes(needle)) && (!category || e.category === category) && (!status || e.status === status) && (!institutionId || e.targetInstitutionIds.includes(institutionId)) && (!from || e.date >= from) && (!to || e.date <= to))
-    .map((e) => ({ ...e, stats: eventStats(oid, e), targetStudents: targetStudents(oid, e).length, institutionNames: e.targetInstitutionIds.map(instName) })).sort((a, b) => b.date.localeCompare(a.date));
+  return zoneEvents(oid).filter((e) => (!needle || e.title.toLowerCase().includes(needle)) && (!category || e.category === category) && (!status || e.status === status) && (!institutionId || (e.targetInstitutionIds || []).includes(institutionId)) && (!from || e.date >= from) && (!to || e.date <= to))
+    .map((e) => ({ ...e, stats: e.stats || eventStats(oid, e), targetStudents: targetStudents(oid, e).length, institutionNames: e.institutionNames || (e.targetInstitutionIds || []).map(instName) })).sort((a, b) => b.date.localeCompare(a.date));
 };
-export const getEvent = (oid, id) => { const e = scopedEvent(oid, id); return e ? { ...e, stats: eventStats(oid, e), institutionNames: e.targetInstitutionIds.map(instName), targetCount: targetStudents(oid, e).length } : null; };
+export const getEvent = (oid, id) => { const e = scopedEvent(oid, id); return e ? { ...e, stats: e.stats || eventStats(oid, e), institutionNames: e.institutionNames || (e.targetInstitutionIds || []).map(instName), targetCount: targetStudents(oid, e).length } : null; };
 
 export const targetStudents = (oid, audience) => zoneStudents(oid).filter((s) => matchesAudience(s, { targetInstitutionIds: [], departments: [], years: [], groups: [], ...audience }));
 

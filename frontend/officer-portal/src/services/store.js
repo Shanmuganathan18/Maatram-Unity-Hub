@@ -88,7 +88,18 @@ export const syncBackendData = async () => {
           venue: e.venue || '',
           zoneId: e.zoneId,
           status: e.status?.toLowerCase() || 'published',
-          invitationCount: e.invitationsCount || 0,
+          invitationCount: e.invitationsCount || e._count?.invitations || 0,
+          targetInstitutionIds: (e.targetInstitutions || []).map((ti) => ti.institutionId || ti.institution?.id).filter(Boolean),
+          institutionNames: (e.targetInstitutions || []).map((ti) => ti.institution?.name).filter(Boolean),
+          stats: {
+            invited: e._count?.invitations || 0,
+            accepted: 0,
+            declined: 0,
+            pending: e._count?.invitations || 0,
+            present: 0,
+            absent: 0,
+            excused: 0,
+          },
         }));
         if (liveEvents.length > 0) {
           s.events = liveEvents;

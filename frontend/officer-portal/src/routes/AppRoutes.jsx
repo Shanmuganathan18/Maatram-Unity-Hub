@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import OfficerLayout from '../layouts/OfficerLayout';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import Login from '../pages/Login';
 import AuthCallback from '../pages/AuthCallback';
 import ChangePassword from '../pages/ChangePassword';
@@ -50,7 +51,7 @@ export default function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/change-password" element={oid ? <ChangePassword /> : <Navigate to="/login" replace />} />
-      <Route element={<Protected><OfficerLayout /></Protected>}>
+      <Route element={<Protected><ErrorBoundary><OfficerLayout /></ErrorBoundary></Protected>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/students" element={<Students />} />
         <Route path="/students/:studentId" element={<StudentDetails />} />

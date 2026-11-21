@@ -26,7 +26,7 @@ export const getInstitutionDetail = (oid, id) => {
   const studs = zoneStudents(oid).filter((s) => s.institutionId === id);
   const count = (key) => Object.entries(studs.reduce((m, s) => ({ ...m, [s[key]]: (m[s[key]] ?? 0) + 1 }), {})).map(([name, value]) => ({ name: key === 'year' ? `Year ${name}` : name, value })).sort((a, b) => a.name.localeCompare(b.name));
   const weekly = weekOptions().map((ws) => ({ weekStart: ws, ...weekStats(matrix(oid, ws, { institutionId: id }).rows) }));
-  const events = zoneEvents(oid).filter((e) => e.targetInstitutionIds.includes(id)).sort((a, b) => b.date.localeCompare(a.date)).map((e) => {
+  const events = zoneEvents(oid).filter((e) => (e.targetInstitutionIds || []).includes(id)).sort((a, b) => b.date.localeCompare(a.date)).map((e) => {
     const ids = new Set(studs.map((s) => s.id));
     const invs = getState().invitations.filter((i) => i.eventId === e.id && ids.has(i.studentId));
     return { event: e, invited: invs.length, accepted: invs.filter((i) => i.response === 'accepted').length, attended: invs.filter((i) => i.attendance === 'present').length };
