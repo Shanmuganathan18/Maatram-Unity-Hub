@@ -355,6 +355,61 @@ export default function EmailDeliveryCentre() {
           <DataTable
             caption="Email delivery logs"
             rows={logs}
+            renderCard={(l) => (
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-navy text-sm">{l.recipientName || 'User'}</p>
+                    <p className="text-xs text-ink-soft">{l.recipientEmail}</p>
+                  </div>
+                  {getStatusBadge(l.status)}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-ink-mute">
+                  {getRoleBadge(l.recipientRole)}
+                  <span>·</span>
+                  <span>{l.attemptCount} {l.attemptCount === 1 ? 'try' : 'tries'}</span>
+                  <span>·</span>
+                  <span>{fmtInstant(l.sentAt || l.createdAt)}</span>
+                </div>
+                <p className="text-xs text-ink-soft line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100 font-mono">
+                  {l.subject}
+                </p>
+                <div className="flex items-center gap-2 pt-1 border-t border-lavender-100">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedLog(l)}
+                    className="text-xs"
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1" />
+                    Details
+                  </Button>
+                  {l.status === 'FAILED' && (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={retryingId === l.id}
+                      onClick={() => handleRetry(l.id)}
+                      className="text-xs"
+                    >
+                      <RotateCcw className={`h-3 w-3 mr-1 ${retryingId === l.id ? 'animate-spin' : ''}`} />
+                      Retry
+                    </Button>
+                  )}
+                  {l.userId && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setResendTarget(l)}
+                      className="text-xs ml-auto"
+                    >
+                      <KeyRound className="h-3 w-3 mr-1" />
+                      Resend
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
             columns={[
               {
                 key: 'recipient',

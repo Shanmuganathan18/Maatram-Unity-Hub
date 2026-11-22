@@ -68,7 +68,39 @@ export function DataTable({ columns, rows, rowKey = (r) => r.id, sort, onSort, r
               {columns.map((c) => <td key={c.key} className={cn('px-4 py-3 align-middle', c.className)}>{c.render ? c.render(r) : r[c.key]}</td>)}</tr>))}</tbody>
         </table>
       </div>
-      <div className="space-y-3 p-3 md:hidden">{rows.map((r) => <div key={rowKey(r)} className="rounded-2xl border border-lavender-200 p-3">{selectable && <label className="mb-2 flex items-center gap-2 text-xs"><input type="checkbox" className="h-5 w-5 accent-brand-700" checked={selected.has(rowKey(r))} onChange={(e) => { const n = new Set(selected); e.target.checked ? n.add(rowKey(r)) : n.delete(rowKey(r)); onSelect(n); }} />Select</label>}{renderCard(r)}</div>)}</div>
+      <div className="space-y-3 p-3 md:hidden">
+        {rows.map((r) => (
+          <div key={rowKey(r)} className="rounded-2xl border border-lavender-200 p-3 bg-white">
+            {selectable && (
+              <label className="mb-2 flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 accent-brand-700"
+                  checked={selected?.has(rowKey(r))}
+                  onChange={(e) => {
+                    const n = new Set(selected);
+                    e.target.checked ? n.add(rowKey(r)) : n.delete(rowKey(r));
+                    onSelect(n);
+                  }}
+                />
+                Select
+              </label>
+            )}
+            {typeof renderCard === 'function' ? (
+              renderCard(r)
+            ) : (
+              <div className="space-y-1.5 text-xs">
+                {columns.map((c) => (
+                  <div key={c.key} className="flex justify-between gap-2 py-0.5 border-b border-lavender-100 last:border-0">
+                    <span className="font-semibold text-ink-mute uppercase text-[10px]">{c.label}</span>
+                    <span className="text-right text-navy">{c.render ? c.render(r) : r[c.key]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </>
   );
 }
